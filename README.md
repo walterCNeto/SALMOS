@@ -1,8 +1,9 @@
 # SALMOS - Stochastic ALM Optimization System
 ## Sistema de Otimização de Asset & Liability Management Bancário
 
-Projeto acadêmico desenvolvido no contexto da proposta de início para um Doutorado na Poli-USP.
-Correa Neto, W.
+### Projeto acadêmico desenvolvido para aplicação em um Doutorado na Poli-USP.
+### Autor e revisor: Correa Neto, W.
+### IA de auxílio: Claude Sonnet 4.6
 
 ---
 
