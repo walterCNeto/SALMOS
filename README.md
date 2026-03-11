@@ -1,4 +1,4 @@
-# ALM Bank Optimization System
+# SALMOS - Stochastic ALM Optimization System
 ## Sistema de Otimização de Asset & Liability Management Bancário
 
 Projeto acadêmico desenvolvido no contexto da proposta de início para um Doutorado na Poli-USP.
