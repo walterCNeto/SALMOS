@@ -1,0 +1,9 @@
+{
+  "duration_ativo_anos": 2.0467,
+  "duration_passivo_anos": 0.4775,
+  "duration_gap_anos": 1.742,
+  "dv01_ativo_R$M": 108.89,
+  "dv01_passivo_R$M": 16.21,
+  "dv01_gap_R$M": 92.67,
+  "interpretacao": "LONG duration: banco perde capital se taxas sobem"
+}

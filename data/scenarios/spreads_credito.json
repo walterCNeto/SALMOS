@@ -1,0 +1,35 @@
+{
+  "base": {
+    "imobiliario_pf": 8.2,
+    "consignado_pf": 10.75,
+    "pessoal_pf": 26.65,
+    "veiculos_pf": 15.05,
+    "cartao_pf": 177.25,
+    "capital_giro_pj": 4.5,
+    "corporativo_pj": 2.8,
+    "trade_finance": 2.2,
+    "rural": 0.5
+  },
+  "stress_alta": {
+    "imobiliario_pf": 10.0,
+    "consignado_pf": 13.0,
+    "pessoal_pf": 34.0,
+    "veiculos_pf": 19.5,
+    "cartao_pf": 220.0,
+    "capital_giro_pj": 6.8,
+    "corporativo_pj": 4.5,
+    "trade_finance": 3.2,
+    "rural": 1.0
+  },
+  "stress_baixa": {
+    "imobiliario_pf": 6.8,
+    "consignado_pf": 8.5,
+    "pessoal_pf": 21.5,
+    "veiculos_pf": 12.0,
+    "cartao_pf": 145.0,
+    "capital_giro_pj": 3.2,
+    "corporativo_pj": 2.0,
+    "trade_finance": 1.6,
+    "rural": 0.3
+  }
+}

@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALM Dashboard — Banco Modelo S.A.</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e17;--bg2:#0f1520;--bg3:#141c2e;
+  --border:#1e2d47;--border2:#243554;
+  --accent:#00d4ff;--accent2:#0088cc;
+  --green:#00e676;--green2:#00c853;
+  --red:#ff1744;--orange:#ff9100;--yellow:#ffd740;
+  --text:#e2eaf5;--text2:#8faac5;--text3:#4a6080;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.012) 2px,rgba(0,212,255,.012) 4px);pointer-events:none;z-index:1000;}
+
+/* HEADER */
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.logo-text{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;}
+.logo-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.05em;}
+.header-right{display:flex;align-items:center;gap:24px;}
+.timestamp{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.status-badge{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:2px;background:rgba(0,230,118,.1);border:1px solid var(--green2);color:var(--green);text-transform:uppercase;letter-spacing:.1em;}
+
+/* NAV */
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;gap:0;overflow-x:auto;}
+.tab{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text3);padding:12px 18px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;letter-spacing:.05em;text-transform:uppercase;}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* MAIN */
+main{padding:1.5rem 2rem;max-width:1600px;margin:0 auto;}
+.section{display:none;}.section.active{display:block;}
+.section-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:1.5rem;}
+.kpi-card{background:var(--bg2);padding:1rem 1.25rem;position:relative;overflow:hidden;transition:background .15s;}
+.kpi-card:hover{background:var(--bg3);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi-card.green::before{background:var(--green);}
+.kpi-card.blue::before{background:var(--accent);}
+.kpi-card.orange::before{background:var(--orange);}
+.kpi-card.red::before{background:var(--red);}
+.kpi-card.yellow::before{background:var(--yellow);}
+.kpi-label{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
+.kpi-value{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);line-height:1;margin-bottom:4px;}
+.kpi-value.green{color:var(--green);}.kpi-value.blue{color:var(--accent);}.kpi-value.orange{color:var(--orange);}.kpi-value.red{color:var(--red);}.kpi-value.yellow{color:var(--yellow);}
+.kpi-unit{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.kpi-delta{font-family:var(--mono);font-size:10px;margin-top:4px;}
+.kpi-delta.up{color:var(--green);}.kpi-delta.down{color:var(--red);}.kpi-delta.neutral{color:var(--text3);}
+
+/* PANELS */
+.panel-grid{display:grid;gap:1rem;margin-bottom:1.5rem;}
+.panel-grid.cols-2{grid-template-columns:1fr 1fr;}.panel-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.panel-grid.cols-1-2{grid-template-columns:1fr 2fr;}.panel-grid.cols-2-1{grid-template-columns:2fr 1fr;}
+.panel{background:var(--bg2);border:1px solid var(--border);padding:1.25rem;}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);}
+.panel-title{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;}
+.panel-tag{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:2px;letter-spacing:.08em;}
+.panel-tag.ok{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.panel-tag.warn{background:rgba(255,145,0,.1);color:var(--orange);border:1px solid rgba(255,145,0,.3);}
+.panel-tag.alert{background:rgba(255,23,68,.1);color:var(--red);border:1px solid rgba(255,23,68,.3);}
+.panel-tag.info{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.3);}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+.data-table th{text-align:left;padding:6px 10px;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.data-table th.right{text-align:right;}
+.data-table td{padding:7px 10px;color:var(--text2);border-bottom:1px solid rgba(30,45,71,.5);}
+.data-table td.right{text-align:right;font-variant-numeric:tabular-nums;}
+.data-table tr:hover td{background:rgba(0,212,255,.03);color:var(--text);}
+.data-table .positive{color:var(--green);}.data-table .negative{color:var(--red);}.data-table .accent{color:var(--accent);}
+.positive{color:var(--green);}.negative{color:var(--red);}.accent{color:var(--accent);}
+
+/* BAR */
+.bar-chart{display:flex;flex-direction:column;gap:8px;}
+.bar-row{display:grid;grid-template-columns:160px 1fr 100px;align-items:center;gap:10px;}
+.bar-label{font-family:var(--mono);font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{height:6px;background:var(--bg3);border-radius:1px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:1px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.bar-val{font-family:var(--mono);font-size:10px;color:var(--text3);text-align:right;}
+
+/* GAUGE */
+.gauge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;}
+.gauge-card{background:var(--bg3);border:1px solid var(--border);padding:1rem;text-align:center;}
+.gauge-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+.gauge-value{font-family:var(--mono);font-size:24px;font-weight:600;line-height:1;margin-bottom:4px;}
+.gauge-bar-wrap{height:4px;background:var(--bg);border-radius:2px;margin:8px 0;overflow:hidden;}
+.gauge-bar{height:100%;border-radius:2px;transition:width 1s;}
+.gauge-min{font-family:var(--mono);font-size:9px;color:var(--text3);}
+
+/* MISC */
+.divider{height:1px;background:var(--border);margin:1.25rem 0;}
+.footnote{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.scroll-table{overflow-x:auto;}
+
+@media(max-width:900px){
+  .panel-grid.cols-2,.panel-grid.cols-3,.panel-grid.cols-1-2,.panel-grid.cols-2-1{grid-template-columns:1fr;}
+  .gauge-grid{grid-template-columns:repeat(2,1fr);}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .bar-row{grid-template-columns:100px 1fr 80px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <div>
+      <div class="logo-text">ALM System // Banco Modelo S.A.</div>
+      <div class="logo-sub">Asset &amp; Liability Management · Doutorado Poli-USP · Data-base Dez/2024</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="timestamp">BASELINE QP · SLSQP · scipy {}</div>
+    <div class="status-badge">● 5/9 RAROC OK</div>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="showSection('overview')">01 · Visão Geral</div>
+  <div class="tab" onclick="showSection('balanco')">02 · Balanço</div>
+  <div class="tab" onclick="showSection('nii')">03 · NII &amp; Gap</div>
+  <div class="tab" onclick="showSection('otimizador')">04 · Otimizador</div>
+  <div class="tab" onclick="showSection('liquidez')">05 · Liquidez</div>
+  <div class="tab" onclick="showSection('capital')">06 · Capital &amp; RAROC</div>
+</nav>
+
+<main>
+
+<!-- 01 OVERVIEW -->
+<div id="sec-overview" class="section active">
+  <div class="section-title">Visão Geral — Banco Modelo S.A.</div>
+  <div class="kpi-grid">
+    
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Ativo</div>
+      <div class="kpi-value blue">532</div>
+      <div class="kpi-unit">R$ bilhões</div>
+      
+    </div>
+    
+    <div class="kpi-card orange">
+      <div class="kpi-label">Total Passivo</div>
+      <div class="kpi-value orange">340</div>
+      <div class="kpi-unit">R$ bilhões</div>
+      
+    </div>
+    
+    <div class="kpi-card green">
+      <div class="kpi-label">Patrimônio Líq.</div>
+      <div class="kpi-value green">192</div>
+      <div class="kpi-unit">R$ bilhões</div>
+      
+    </div>
+    
+    <div class="kpi-card green">
+      <div class="kpi-label">NII Anual Base</div>
+      <div class="kpi-value green">61.0</div>
+      <div class="kpi-unit">R$ bilhões</div>
+      
+    </div>
+    
+    <div class="kpi-card blue">
+      <div class="kpi-label">NIM Médio</div>
+      <div class="kpi-value blue">11.47%</div>
+      <div class="kpi-unit">% a.a.</div>
+      
+    </div>
+    
+    <div class="kpi-card blue">
+      <div class="kpi-label">RWA Total</div>
+      <div class="kpi-value blue">265.7</div>
+      <div class="kpi-unit">R$ bilhões</div>
+      
+    </div>
+    
+    <div class="kpi-card green">
+      <div class="kpi-label">Índice Basileia</div>
+      <div class="kpi-value green">14.23%</div>
+      <div class="kpi-unit">mín 10.5%</div>
+      
+    </div>
+    
+    <div class="kpi-card green">
+      <div class="kpi-label">CET1</div>
+      <div class="kpi-value green">10.73%</div>
+      <div class="kpi-unit">mín 7.0%</div>
+      
+    </div>
+    
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Duration Gap</div>
+      <div class="kpi-value yellow">1.74a</div>
+      <div class="kpi-unit">anos · LONG</div>
+      
+    </div>
+    
+    <div class="kpi-card orange">
+      <div class="kpi-label">DV01 Gap</div>
+      <div class="kpi-value orange">92.7</div>
+      <div class="kpi-unit">R$M/bp</div>
+      
+    </div>
+    
+    <div class="kpi-card green">
+      <div class="kpi-label">LCR Stress</div>
+      <div class="kpi-value green">1311%</div>
+      <div class="kpi-unit">mín 100%</div>
+      
+    </div>
+    
+    <div class="kpi-card green">
+      <div class="kpi-label">NSFR</div>
+      <div class="kpi-value green">105.3%</div>
+      <div class="kpi-unit">mín 100%</div>
+      
+    </div>
+  </div>
+
+  <div class="panel-grid cols-2">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Semáforo Regulatório</div>
+        <div class="panel-tag ok">Todos OK</div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Métrica</th><th class="right">Atual</th><th class="right">Mínimo</th><th class="right">Folga</th><th class="right">Status</th></tr></thead>
+        <tbody>
+          <tr><td>LCR</td><td class="right positive">1311%</td><td class="right">100%</td><td class="right positive">+1211pp</td><td class="right positive">● OK</td></tr>
+          <tr><td>NSFR</td><td class="right positive">105.3%</td><td class="right">100%</td><td class="right positive">+5.3pp</td><td class="right positive">● OK</td></tr>
+          <tr><td>Índice Basileia</td><td class="right positive">14.23%</td><td class="right">10.5%</td><td class="right positive">+3.73pp</td><td class="right positive">● OK</td></tr>
+          <tr><td>CET1 Ratio</td><td class="right positive">10.73%</td><td class="right">7.0%</td><td class="right positive">+3.73pp</td><td class="right positive">● OK</td></tr>
+          <tr><td>Duration Gap</td><td class="right positive">1.74a</td><td class="right">±2.0a</td><td class="right positive">0.26a</td><td class="right positive">● OK</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">NII por Cenário de Juros (12 meses)</div><div class="panel-tag info">3 cenários</div></div>
+      <div class="bar-chart">
+        
+        <div class="bar-row">
+          <div class="bar-label">Base (SELIC 11.75%)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:95%;background:var(--accent)"></div></div>
+          <div class="bar-val">R$61.0bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Stress Alta (+200bps)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:94%;background:var(--red)"></div></div>
+          <div class="bar-val">R$60.7bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Stress Baixa (−250bps)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:95%;background:var(--green)"></div></div>
+          <div class="bar-val">R$61.4bi</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:var(--bg3);padding:10px;border:1px solid var(--border);text-align:center;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;">ΔNII (ALTA)</div>
+          <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--red)">-0.36bi</div>
+        </div>
+        <div style="background:var(--bg3);padding:10px;border:1px solid var(--border);text-align:center;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;">ΔNII (BAIXA)</div>
+          <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--green)">+0.33bi</div>
+        </div>
+        <div style="background:var(--bg3);padding:10px;border:1px solid var(--border);text-align:center;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;">RAROC TOTAL</div>
+          <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent)">159%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 BALANÇO -->
+<div id="sec-balanco" class="section">
+  <div class="section-title">Estrutura do Balanço Patrimonial</div>
+  <div class="panel-grid cols-2">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Ativo por Categoria</div><div class="panel-tag info">R$ 532bi total</div></div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">Crédito PF</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent)"></div></div>
+          <div class="bar-val">R$221.5bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Crédito PJ</div>
+          <div class="bar-track"><div class="bar-fill" style="width:55%;background:var(--accent2)"></div></div>
+          <div class="bar-val">R$121.3bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Títulos e Valores Mobi</div>
+          <div class="bar-track"><div class="bar-fill" style="width:52%;background:var(--green)"></div></div>
+          <div class="bar-val">R$114.6bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Caixa e Equivalentes</div>
+          <div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--yellow)"></div></div>
+          <div class="bar-val">R$40.5bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Outros Ativos</div>
+          <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--orange)"></div></div>
+          <div class="bar-val">R$22.9bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Interbancário</div>
+          <div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--text3)"></div></div>
+          <div class="bar-val">R$11.2bi</div>
+        </div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Passivo por Categoria</div><div class="panel-tag info">R$ 340bi total</div></div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">CDB</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--orange)"></div></div>
+          <div class="bar-val">R$115.3bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Depósitos</div>
+          <div class="bar-track"><div class="bar-fill" style="width:77%;background:var(--red)"></div></div>
+          <div class="bar-val">R$88.5bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Letras Financeiras</div>
+          <div class="bar-track"><div class="bar-fill" style="width:43%;background:var(--yellow)"></div></div>
+          <div class="bar-val">R$50.0bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">LCI/LCA</div>
+          <div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--accent2)"></div></div>
+          <div class="bar-val">R$40.2bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Funding Externo</div>
+          <div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--accent)"></div></div>
+          <div class="bar-val">R$20.8bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Outras Obrigações</div>
+          <div class="bar-track"><div class="bar-fill" style="width:14%;background:var(--text3)"></div></div>
+          <div class="bar-val">R$16.2bi</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Interbancário Passivo</div>
+          <div class="bar-track"><div class="bar-fill" style="width:7%;background:var(--orange)"></div></div>
+          <div class="bar-val">R$8.5bi</div>
+        </div></div>
+    </div>
+  </div>
+  <div class="panel-grid cols-3">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Indicadores de Capital</div></div>
+      <table class="data-table">
+        <thead><tr><th>Indicador</th><th class="right">Valor</th><th class="right">Limite</th></tr></thead>
+        <tbody>
+          <tr><td>RWA Total</td><td class="right">R$265.7bi</td><td class="right">—</td></tr>
+          <tr><td>PR Regulatório</td><td class="right">R$37.8bi</td><td class="right">—</td></tr>
+          <tr><td>Índice Basileia</td><td class="right positive">14.23%</td><td class="right">10.5%</td></tr>
+          <tr><td>CET1 Ratio</td><td class="right positive">10.73%</td><td class="right">7.0%</td></tr>
+          <tr><td>Leverage</td><td class="right">2.77x</td><td class="right">—</td></tr>
+          <tr><td>Crédito/Ativo</td><td class="right">64.4%</td><td class="right">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Composição do Patrimônio</div></div>
+      <table class="data-table">
+        <thead><tr><th>Componente</th><th class="right">R$ M</th></tr></thead>
+        <tbody>
+          <tr><td>Capital Principal (CET1)</td><td class="right positive">28,500</td></tr>
+          <tr><td>Capital Complementar (AT1)</td><td class="right">3,200</td></tr>
+          <tr><td>Tier 2</td><td class="right">6,100</td></tr>
+          <tr><td>Reservas</td><td class="right">153,100</td></tr>
+          <tr><td>Ajuste Avaliação Patrimonial</td><td class="right">1,200</td></tr>
+          <tr><td><strong>PR Total</strong></td><td class="right positive"><strong>37,800</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">RWA por Categoria</div></div>
+      <table class="data-table">
+        <thead><tr><th>Categoria</th><th class="right">RWA (R$M)</th><th class="right">%</th></tr></thead>
+        <tbody>
+          <tr><td>Crédito PF</td><td class="right">128,075</td><td class="right accent">37.4%</td></tr><tr><td>Crédito PJ</td><td class="right">98,350</td><td class="right accent">28.7%</td></tr><tr><td>Risco Operacional</td><td class="right">87,180</td><td class="right accent">25.5%</td></tr><tr><td>Outros Ativos</td><td class="right">22,900</td><td class="right accent">6.7%</td></tr><tr><td>Títulos e Valores Mobiliários</td><td class="right">3,750</td><td class="right accent">1.1%</td></tr><tr><td>Interbancário</td><td class="right">2,240</td><td class="right accent">0.7%</td></tr><tr><td>Caixa e Equivalentes</td><td class="right">0</td><td class="right accent">0.0%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 03 NII & GAP -->
+<div id="sec-nii" class="section">
+  <div class="section-title">NII, Gap de Reprecificação e Duration</div>
+  <div class="panel-grid cols-2">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Gap de Reprecificação por Bucket</div>
+        <div class="panel-tag warn">Duration Gap: 1.74a</div>
+      </div>
+      <div class="scroll-table">
+      <table class="data-table">
+        <thead><tr><th>Bucket</th><th class="right">Ativo</th><th class="right">Passivo</th><th class="right">Gap</th><th class="right">Gap Cum.</th><th class="right">DV01</th></tr></thead>
+        <tbody><tr>
+              <td class="accent">O/N–1M</td>
+              <td class="right">200.8bi</td>
+              <td class="right">246.0bi</td>
+              <td class="right negative">-45.2bi</td>
+              <td class="right negative">-45.2bi</td>
+              <td class="right">+0.0</td>
+            </tr><tr>
+              <td class="accent">1M–3M</td>
+              <td class="right">0.0bi</td>
+              <td class="right">0.0bi</td>
+              <td class="right ">0.0bi</td>
+              <td class="right negative">-45.2bi</td>
+              <td class="right">+0.0</td>
+            </tr><tr>
+              <td class="accent">3M–6M</td>
+              <td class="right">0.0bi</td>
+              <td class="right">0.0bi</td>
+              <td class="right ">0.0bi</td>
+              <td class="right negative">-45.2bi</td>
+              <td class="right">+0.0</td>
+            </tr><tr>
+              <td class="accent">6M–1A</td>
+              <td class="right">34.0bi</td>
+              <td class="right">23.0bi</td>
+              <td class="right positive">+11.0bi</td>
+              <td class="right negative">-34.2bi</td>
+              <td class="right">+0.2</td>
+            </tr><tr>
+              <td class="accent">1A–2A</td>
+              <td class="right">40.9bi</td>
+              <td class="right">9.8bi</td>
+              <td class="right positive">+31.1bi</td>
+              <td class="right negative">-3.1bi</td>
+              <td class="right">+4.2</td>
+            </tr><tr>
+              <td class="accent">2A–3A</td>
+              <td class="right">40.8bi</td>
+              <td class="right">16.2bi</td>
+              <td class="right positive">+24.6bi</td>
+              <td class="right positive">+21.5bi</td>
+              <td class="right">+5.7</td>
+            </tr><tr>
+              <td class="accent">3A–5A</td>
+              <td class="right">102.5bi</td>
+              <td class="right">12.5bi</td>
+              <td class="right positive">+90.0bi</td>
+              <td class="right positive">+111.5bi</td>
+              <td class="right">+29.7</td>
+            </tr><tr>
+              <td class="accent">5A–7A</td>
+              <td class="right">28.0bi</td>
+              <td class="right">32.0bi</td>
+              <td class="right negative">-4.0bi</td>
+              <td class="right positive">+107.5bi</td>
+              <td class="right">-0.6</td>
+            </tr><tr>
+              <td class="accent">7A–10A</td>
+              <td class="right">0.0bi</td>
+              <td class="right">0.0bi</td>
+              <td class="right ">0.0bi</td>
+              <td class="right positive">+107.5bi</td>
+              <td class="right">+0.0</td>
+            </tr><tr>
+              <td class="accent">10A+</td>
+              <td class="right">85.0bi</td>
+              <td class="right">0.0bi</td>
+              <td class="right positive">+85.0bi</td>
+              <td class="right positive">+192.5bi</td>
+              <td class="right">+53.4</td>
+            </tr></tbody>
+      </table>
+      </div>
+      <div class="footnote">DV01 Gap em R$M/1bp. Positivo = LONG nesse bucket. Gap O/N negativo = passivos repricing antes dos ativos (típico varejo).</div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Duration e Sensibilidade ao Risco de Taxa</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div style="background:var(--bg3);padding:12px;border:1px solid var(--border);text-align:center;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:6px;">DUR. ATIVO</div>
+          <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--accent)">2.05</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">anos</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border:1px solid var(--border);text-align:center;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:6px;">DUR. PASSIVO</div>
+          <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--orange)">0.48</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">anos</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border:1px solid var(--border);text-align:center;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:6px;">DUR. GAP</div>
+          <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--yellow)">1.74</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">anos</div>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Cenário</th><th class="right">NII 12m</th><th class="right">NIM</th><th class="right">vs. Base</th></tr></thead>
+        <tbody>
+          <tr><td class="accent">● Base (SELIC 11.75%)</td><td class="right">61.03bi</td><td class="right">11.47%</td><td class="right">—</td></tr>
+          <tr><td class="negative">● Stress Alta (+200bps)</td><td class="right">60.67bi</td><td class="right">11.40%</td><td class="right negative">-0.358bi</td></tr>
+          <tr><td class="positive">● Stress Baixa (−250bps)</td><td class="right">61.35bi</td><td class="right">11.53%</td><td class="right positive">+0.327bi</td></tr>
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="text-align:center;"><div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;">DV01 ATIVO</div><div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent)">R$108.9M</div></div>
+        <div style="text-align:center;"><div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;">DV01 PASSIVO</div><div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange)">R$16.2M</div></div>
+        <div style="text-align:center;"><div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;">DV01 GAP</div><div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--yellow)">R$92.7M</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 OTIMIZADOR -->
+<div id="sec-otimizador" class="section">
+  <div class="section-title">Otimizador ALM — QP Baseline (SLSQP)</div>
+  <div class="panel">
+    <div class="panel-header"><div class="panel-title">Fronteira Eficiente — NII × DV01 Gap (12 pontos)</div><div class="panel-tag info">λ ∈ [0.0001, 1.00]</div></div>
+    <div class="scroll-table">
+    <table class="data-table">
+      <thead><tr><th>λ (risco)</th><th class="right">NII Total</th><th class="right">DV01 Gap</th><th class="right">Dur. Gap</th><th class="right">LCR</th><th class="right">IB</th><th class="right">Status</th></tr></thead>
+      <tbody><tr>
+              <td class="accent">0.0001</td>
+              <td class="right">61,831M</td>
+              <td class="right">91.5</td>
+              <td class="right">1.60a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0002</td>
+              <td class="right">61,829M</td>
+              <td class="right">91.2</td>
+              <td class="right">1.59a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0005</td>
+              <td class="right">61,831M</td>
+              <td class="right">91.6</td>
+              <td class="right">1.60a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0012</td>
+              <td class="right">61,828M</td>
+              <td class="right">89.1</td>
+              <td class="right">1.56a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0028</td>
+              <td class="right">61,829M</td>
+              <td class="right">84.9</td>
+              <td class="right">1.48a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0066</td>
+              <td class="right">61,826M</td>
+              <td class="right">79.6</td>
+              <td class="right">1.39a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0152</td>
+              <td class="right">61,818M</td>
+              <td class="right">80.5</td>
+              <td class="right">1.41a</td>
+              <td class="right">358%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0351</td>
+              <td class="right">61,788M</td>
+              <td class="right">48.0</td>
+              <td class="right">0.84a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.0811</td>
+              <td class="right">61,788M</td>
+              <td class="right">48.0</td>
+              <td class="right">0.84a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.1874</td>
+              <td class="right">61,788M</td>
+              <td class="right">48.0</td>
+              <td class="right">0.84a</td>
+              <td class="right">359%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">0.4329</td>
+              <td class="right">61,787M</td>
+              <td class="right">48.0</td>
+              <td class="right">0.84a</td>
+              <td class="right">360%</td>
+              <td class="right">13.8%</td>
+              <td class="right positive">ótimo</td>
+            </tr><tr>
+              <td class="accent">1.0000</td>
+              <td class="right">61,531M</td>
+              <td class="right">44.2</td>
+              <td class="right">0.77a</td>
+              <td class="right">361%</td>
+              <td class="right">13.9%</td>
+              <td class="right positive">ótimo</td>
+            </tr></tbody>
+    </table>
+    </div>
+    <div class="footnote">Fronteira praticamente flat em NII: reduzir DV01 gap de 92→44 custa apenas R$300M de NII (0.48%). Hedge é barato relativamente ao NII total.</div>
+  </div>
+</div>
+
+<!-- 05 LIQUIDEZ -->
+<div id="sec-liquidez" class="section">
+  <div class="section-title">Gestão de Liquidez — LCR / NSFR / Stress Test</div>
+  <div class="gauge-grid">
+    <div class="gauge-card">
+      <div class="gauge-label">LCR Stress 30d</div>
+      <div class="gauge-value positive">1311%</div>
+      <div class="gauge-bar-wrap"><div class="gauge-bar" style="width:100%;background:var(--green)"></div></div>
+      <div class="gauge-min">Mínimo: 100% ✅</div>
+    </div>
+    <div class="gauge-card">
+      <div class="gauge-label">NSFR</div>
+      <div class="gauge-value positive">105.3%</div>
+      <div class="gauge-bar-wrap"><div class="gauge-bar" style="width:100%;background:var(--green)"></div></div>
+      <div class="gauge-min">Mínimo: 100% ✅</div>
+    </div>
+    <div class="gauge-card">
+      <div class="gauge-label">HQLA Total</div>
+      <div class="gauge-value" style="color:var(--accent)">R$164bi</div>
+      <div class="gauge-bar-wrap"><div class="gauge-bar" style="width:93%;background:var(--accent)"></div></div>
+      <div class="gauge-min">Nível 1: R$152bi (93%)</div>
+    </div>
+    <div class="gauge-card">
+      <div class="gauge-label">Custo Buffer HQLA</div>
+      <div class="gauge-value" style="color:var(--orange)">R$9bi</div>
+      <div class="gauge-bar-wrap"><div class="gauge-bar" style="width:45%;background:var(--orange)"></div></div>
+      <div class="gauge-min">Custo oportunidade/ano</div>
+    </div>
+  </div>
+
+  <div class="panel-grid cols-2">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Custo de Carregamento HQLA por Produto</div><div class="panel-tag warn">R$9bi/ano</div></div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">Títulos NTN-B</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--green)"></div></div>
+          <div class="bar-val">R$2,744M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Títulos LFT</div>
+          <div class="bar-track"><div class="bar-fill" style="width:73%;background:var(--green)"></div></div>
+          <div class="bar-val">R$2,016M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Compulsório BCB</div>
+          <div class="bar-track"><div class="bar-fill" style="width:52%;background:var(--green)"></div></div>
+          <div class="bar-val">R$1,440M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Disponibilidades</div>
+          <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--green)"></div></div>
+          <div class="bar-val">R$1,381M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Títulos LTN</div>
+          <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--green)"></div></div>
+          <div class="bar-val">R$549M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Operações interbancári</div>
+          <div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--green)"></div></div>
+          <div class="bar-val">R$498M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">CDB outros bancos</div>
+          <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--yellow)"></div></div>
+          <div class="bar-val">R$270M/a</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Títulos NTN-F</div>
+          <div class="bar-track"><div class="bar-fill" style="width:8%;background:var(--green)"></div></div>
+          <div class="bar-val">R$228M/a</div>
+        </div></div>
+      <div class="footnote">Custo de oportunidade = (taxa crédito alternativo − taxa HQLA) × saldo. Referência: capital de giro PJ ao CDI+4.5%.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Projeção LCR — 12 meses (Cenário Base)</div><div class="panel-tag ok">Folga confortável</div></div>
+      <div class="scroll-table">
+      <table class="data-table">
+        <thead><tr><th>Mês</th><th class="right">LCR</th><th class="right">NSFR</th><th class="right">HQLA</th><th class="right">NCO</th></tr></thead>
+        <tbody><tr>
+              <td class="accent">M01</td>
+              <td class="right positive">463%</td>
+              <td class="right positive">105%</td>
+              <td class="right">164.3bi</td>
+              <td class="right">35.5bi</td>
+            </tr><tr>
+              <td class="accent">M02</td>
+              <td class="right positive">462%</td>
+              <td class="right positive">105%</td>
+              <td class="right">164.6bi</td>
+              <td class="right">35.6bi</td>
+            </tr><tr>
+              <td class="accent">M03</td>
+              <td class="right positive">461%</td>
+              <td class="right positive">105%</td>
+              <td class="right">165.0bi</td>
+              <td class="right">35.8bi</td>
+            </tr><tr>
+              <td class="accent">M04</td>
+              <td class="right positive">460%</td>
+              <td class="right positive">105%</td>
+              <td class="right">165.4bi</td>
+              <td class="right">36.0bi</td>
+            </tr><tr>
+              <td class="accent">M05</td>
+              <td class="right positive">459%</td>
+              <td class="right positive">105%</td>
+              <td class="right">165.8bi</td>
+              <td class="right">36.1bi</td>
+            </tr><tr>
+              <td class="accent">M06</td>
+              <td class="right positive">458%</td>
+              <td class="right positive">105%</td>
+              <td class="right">166.2bi</td>
+              <td class="right">36.3bi</td>
+            </tr><tr>
+              <td class="accent">M07</td>
+              <td class="right positive">457%</td>
+              <td class="right positive">105%</td>
+              <td class="right">166.5bi</td>
+              <td class="right">36.5bi</td>
+            </tr><tr>
+              <td class="accent">M08</td>
+              <td class="right positive">456%</td>
+              <td class="right positive">105%</td>
+              <td class="right">166.9bi</td>
+              <td class="right">36.6bi</td>
+            </tr><tr>
+              <td class="accent">M09</td>
+              <td class="right positive">455%</td>
+              <td class="right positive">105%</td>
+              <td class="right">167.3bi</td>
+              <td class="right">36.8bi</td>
+            </tr><tr>
+              <td class="accent">M10</td>
+              <td class="right positive">454%</td>
+              <td class="right positive">105%</td>
+              <td class="right">167.7bi</td>
+              <td class="right">37.0bi</td>
+            </tr><tr>
+              <td class="accent">M11</td>
+              <td class="right positive">452%</td>
+              <td class="right positive">105%</td>
+              <td class="right">168.1bi</td>
+              <td class="right">37.2bi</td>
+            </tr><tr>
+              <td class="accent">M12</td>
+              <td class="right positive">451%</td>
+              <td class="right positive">105%</td>
+              <td class="right">168.5bi</td>
+              <td class="right">37.3bi</td>
+            </tr></tbody>
+      </table>
+      </div>
+      <div class="footnote">HQLA cresce a 50% da taxa de crescimento do crédito (gestão ativa). NSFR constraint ativo no otimizador.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 06 CAPITAL -->
+<div id="sec-capital" class="section">
+  <div class="section-title">Capital Econômico, RAROC e Pricing</div>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">RAROC por Linha de Negócio (Hurdle Rate: 15%)</div>
+      <div class="panel-tag ok">5/9 acima do hurdle</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Segmento</th><th class="right">EAD</th><th class="right">Cap. Econ.</th><th class="right">NII Líq.</th><th class="right">RAROC</th><th class="right">EVA</th><th class="right">OK?</th></tr></thead>
+      <tbody><tr>
+              <td class="positive">Cartão crédito PF</td>
+              <td class="right">19.5bi</td>
+              <td class="right">3.7bi</td>
+              <td class="right positive">32,879M</td>
+              <td class="right positive">888.1%</td>
+              <td class="right positive">+32,324M</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito consignado PF</td>
+              <td class="right">62.0bi</td>
+              <td class="right">3.1bi</td>
+              <td class="right positive">5,602M</td>
+              <td class="right positive">179.6%</td>
+              <td class="right positive">+5,134M</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito pessoal PF</td>
+              <td class="right">24.0bi</td>
+              <td class="right">3.1bi</td>
+              <td class="right positive">4,730M</td>
+              <td class="right positive">152.3%</td>
+              <td class="right positive">+4,265M</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito veículos PF</td>
+              <td class="right">31.0bi</td>
+              <td class="right">2.7bi</td>
+              <td class="right positive">3,802M</td>
+              <td class="right positive">139.1%</td>
+              <td class="right positive">+3,392M</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito corporativo PJ</td>
+              <td class="right">52.0bi</td>
+              <td class="right">4.6bi</td>
+              <td class="right positive">835M</td>
+              <td class="right positive">18.1%</td>
+              <td class="right positive">+143M</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="negative">Capital de giro PJ PME</td>
+              <td class="right">38.0bi</td>
+              <td class="right">4.3bi</td>
+              <td class="right negative">397M</td>
+              <td class="right negative">9.2%</td>
+              <td class="right negative">-249M</td>
+              <td class="right">❌</td>
+            </tr><tr>
+              <td class="negative">Crédito imobiliário PF</td>
+              <td class="right">85.0bi</td>
+              <td class="right">6.2bi</td>
+              <td class="right negative">-1,424M</td>
+              <td class="right negative">-23.1%</td>
+              <td class="right negative">-2,348M</td>
+              <td class="right">❌</td>
+            </tr><tr>
+              <td class="negative">Crédito rural</td>
+              <td class="right">16.8bi</td>
+              <td class="right">0.8bi</td>
+              <td class="right negative">-439M</td>
+              <td class="right negative">-55.3%</td>
+              <td class="right negative">-559M</td>
+              <td class="right">❌</td>
+            </tr><tr>
+              <td class="negative">Trade finance</td>
+              <td class="right">14.5bi</td>
+              <td class="right">0.2bi</td>
+              <td class="right negative">-702M</td>
+              <td class="right negative">-392.9%</td>
+              <td class="right negative">-729M</td>
+              <td class="right">❌</td>
+            </tr></tbody>
+      <tfoot><tr style="border-top:2px solid var(--border2);">
+        <td><strong>TOTAL</strong></td>
+        <td class="right"><strong>R$343bi</strong></td>
+        <td class="right"><strong>R$28.7bi</strong></td>
+        <td class="right positive"><strong>R$45,680M</strong></td>
+        <td class="right positive"><strong>159%</strong></td>
+        <td class="right positive"><strong>+R$41,373M</strong></td>
+        <td class="right"></td>
+      </tr></tfoot>
+    </table>
+    <div class="footnote">Capital Econômico via fórmula IRB Basileia II (UL × ajuste maturidade). Imobiliário, Rural e Trade Finance abaixo do hurdle — subsídio implícito ou crédito direcionado regulatório.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Pricing Mínimo via RAROC ≥ 15%</div>
+      <div class="panel-tag ok">5 adequados / 4 abaixo do mínimo</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Segmento</th><th class="right">Taxa Atual</th><th class="right">Taxa Mín. RAROC</th><th class="right">Folga</th><th class="right">RAROC Impl.</th><th class="right">OK?</th></tr></thead>
+      <tbody><tr>
+              <td class="positive">Cartão crédito PF</td>
+              <td class="right">189.00%</td>
+              <td class="right">23.24%</td>
+              <td class="right positive">+165.76pp</td>
+              <td class="right">8.9%</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito pessoal PF</td>
+              <td class="right">38.40%</td>
+              <td class="right">20.63%</td>
+              <td class="right positive">+17.77pp</td>
+              <td class="right">1.5%</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito veículos PF</td>
+              <td class="right">26.80%</td>
+              <td class="right">15.86%</td>
+              <td class="right positive">+10.94pp</td>
+              <td class="right">1.4%</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito consignado PF</td>
+              <td class="right">22.50%</td>
+              <td class="right">14.22%</td>
+              <td class="right positive">+8.28pp</td>
+              <td class="right">1.8%</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="positive">Crédito corporativo PJ</td>
+              <td class="right">14.55%</td>
+              <td class="right">14.27%</td>
+              <td class="right positive">+0.28pp</td>
+              <td class="right">0.2%</td>
+              <td class="right">✅</td>
+            </tr><tr>
+              <td class="negative">Capital de giro PJ PME</td>
+              <td class="right">16.25%</td>
+              <td class="right">16.91%</td>
+              <td class="right negative">-0.66pp</td>
+              <td class="right">0.1%</td>
+              <td class="right">❌</td>
+            </tr><tr>
+              <td class="negative">Crédito imobiliário PF</td>
+              <td class="right">10.50%</td>
+              <td class="right">13.26%</td>
+              <td class="right negative">-2.76pp</td>
+              <td class="right">-0.2%</td>
+              <td class="right">❌</td>
+            </tr><tr>
+              <td class="negative">Crédito rural</td>
+              <td class="right">10.50%</td>
+              <td class="right">13.82%</td>
+              <td class="right negative">-3.32pp</td>
+              <td class="right">-0.6%</td>
+              <td class="right">❌</td>
+            </tr><tr>
+              <td class="negative">Trade finance</td>
+              <td class="right">7.40%</td>
+              <td class="right">12.42%</td>
+              <td class="right negative">-5.02pp</td>
+              <td class="right">-3.9%</td>
+              <td class="right">❌</td>
+            </tr></tbody>
+    </table>
+    <div class="footnote">Taxa mínima = Custo Funding + PE/EAD + Custo Op. + RAROC_alvo × CE/EAD. Segmentos com folga negativa operam abaixo do mínimo econômico — razão estratégica ou regulatória.</div>
+  </div>
+</div>
+
+</main>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill, .gauge-bar').forEach(f => {
+      const w = f.style.width;
+      f.style.width = '0';
+      setTimeout(() => { f.style.width = w; }, 50);
+    });
+  }, 100);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1397 @@
+%% =============================================================
+%%  Otimização Estocástica Bancária do NIM para Guidance
+%%  ALM-ALCO sob Contornos Regulatórios em Mercados Completos
+%%  Relatório Técnico --- Doutorado PPGEE Poli-USP
+%%
+%%  Compilar com:
+%%    pdflatex alm_bank_relatorio.tex
+%%    pdflatex alm_bank_relatorio.tex   (2a passagem: TOC, refs)
+%%
+%%  Dependências (TeX Live / MiKTeX --- download automático):
+%%    lmodern, microtype, amsmath, amssymb, bm,
+%%    geometry, setspace, graphicx, float, booktabs,
+%%    array, multirow, tabularx, xcolor, colortbl,
+%%    hyperref, natbib, fancyhdr, listings, tcolorbox,
+%%    babel (brazil), inputenc, fontenc, caption
+%% =============================================================
+
+\documentclass[12pt, a4paper, oneside]{article}
+
+%% --- Encoding e idioma --------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+
+%% --- Fonte --------------------------------------------------
+\usepackage{lmodern}
+\usepackage{microtype}
+
+%% --- Matematica ---------------------------------------------
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{bm}
+
+%% --- Layout -------------------------------------------------
+\usepackage[
+  top=3.0cm, bottom=2.0cm,
+  left=3.0cm, right=2.0cm
+]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+%% --- Figuras e tabelas --------------------------------------
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{caption}   % permite \captionsetup e legenda customizada
+
+%% --- Cores --------------------------------------------------
+\definecolor{almblue}{RGB}{21, 101, 192}
+\definecolor{almgreen}{RGB}{0, 140, 90}
+\definecolor{almred}{RGB}{183, 28, 28}
+\definecolor{almgray}{RGB}{240, 243, 247}
+\definecolor{almgraytext}{RGB}{80, 100, 120}
+
+%% --- Hyperlinks (deve vir ANTES de natbib) ------------------
+\usepackage[
+  colorlinks  = true,
+  linkcolor   = almblue,
+  citecolor   = almblue,
+  urlcolor    = almblue,
+  anchorcolor = almblue,
+  pdftitle    = {Otimizacao Estocástica Bancária do NIM para Guidance
+                 ALM-ALCO sob Contornos Regulatórios em Mercados Completos},
+  pdfauthor   = {Walter Correa Neto},
+  pdfsubject  = {Relatório Técnico de Doutorado PPGEE Poli-USP},
+  pdfkeywords = {ALM; ALCO; NIM; otimizacao estocástica; IRRBB; LCR; NSFR; RAROC},
+]{hyperref}
+
+%% --- natbib: citações autor-data, links via hyperref --------
+%%     Funciona diretamente com \begin{thebibliography} manual.
+%%     \cite{key}      → (AUTOR, ANO)   clicável
+%%     \citet{key}     → AUTOR (ANO)    clicável
+%%     Cada link leva à entrada correspondente nas referências.
+\usepackage[round, colon, authoryear, sort]{natbib}
+\setcitestyle{aysep={,}}   % separador autor-ano: vírgula
+
+%% --- Fonte e nota ABNT para tabelas e figuras ---------------
+%%     \fonte{texto}  → "Fonte: texto"  abaixo do float
+%%     \nota{texto}   → "Nota: texto"   abaixo do float
+%%     Posicionados como parágrafo dentro do ambiente figure/table,
+%%     APÓS o \caption, usando \par\smallskip com fonte menor.
+\newcommand{\fonte}[1]{%
+  \par\smallskip
+  \noindent{\footnotesize\textbf{Fonte:} #1}%
+}
+\newcommand{\nota}[1]{%
+  \par\smallskip
+  \noindent{\footnotesize\textbf{Nota:} #1}%
+}
+
+%% --- Cabeçalho e rodapé -------------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{almgraytext}{%
+  Otimização Estocástica Bancária do NIM --- Doutorado PPGEE Poli-USP}}
+\fancyhead[R]{\small\textcolor{almgraytext}{W.\ Correa Neto}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{15pt}
+
+%% --- Codigo-fonte -------------------------------------------
+\usepackage{listings}
+\lstset{
+  basicstyle      = \ttfamily\footnotesize,
+  backgroundcolor = \color{almgray},
+  frame           = single,
+  framerule       = 0.4pt,
+  rulecolor       = \color{almblue!30},
+  numbers         = left,
+  numberstyle     = \tiny\color{almgraytext},
+  breaklines      = true,
+  language        = Python,
+  keywordstyle    = \color{almblue}\bfseries,
+  commentstyle    = \color{almgreen}\itshape,
+  stringstyle     = \color{almred},
+  showstringspaces= false,
+  captionpos      = b,
+}
+
+%% --- Caixas de destaque -------------------------------------
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\newtcolorbox{infobox}[1][]{
+  colback=almgray, colframe=almblue!60,
+  fonttitle=\bfseries\small, title=#1, breakable,
+  left=6pt, right=6pt, top=6pt, bottom=6pt,
+}
+\newtcolorbox{resultbox}[1][]{
+  colback=almgreen!5, colframe=almgreen!60,
+  fonttitle=\bfseries\small, title=#1, breakable,
+}
+\newtcolorbox{warnbox}[1][]{
+  colback=almred!5, colframe=almred!50,
+  fonttitle=\bfseries\small, title=#1, breakable,
+}
+
+%% --- Macros de conveniência ---------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\brlM}[1]{R\$\,#1\,M}
+\newcommand{\brlBi}[1]{R\$\,#1\,bi}
+
+%% --- Caminho das figuras ------------------------------------
+%%     Compilar em docs/; charts estão em ../outputs/charts/
+\graphicspath{{../outputs/charts/}}
+
+%% =============================================================
+\begin{document}
+%% =============================================================
+
+%% ---- CAPA --------------------------------------------------
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+
+  {\large\bfseries\color{almblue}
+    Universidade de São Paulo --- Escola Politécnica\\[0.4em]
+    Programa de Pós-Graduação em Engenharia Elétrica (PPGEE)\\[0.3em]
+    Área de Concentração: Engenharia de Sistemas
+  }
+
+  \vspace{2.5cm}
+
+  \rule{\textwidth}{1.5pt}\\[0.6em]
+  {\LARGE\bfseries
+    Otimização Estocástica Bancária do NIM\\[0.4em]
+    para \textit{Guidance} ALM-ALCO\\[0.4em]
+    sob Contornos Regulatórios\\[0.4em]
+    em Mercados Completos
+  }\\[0.6em]
+  {\large\itshape
+    Relatório Técnico de Implementação --- \textit{Baseline} Quantitativo
+  }\\[0.4em]
+  \rule{\textwidth}{1.5pt}
+
+  \vspace{2.0cm}
+
+  \begin{tabular}{rl}
+    \textbf{Candidato:}          & Walter Correa Neto \\[0.4em]
+    \textbf{Orientador:}         & Prof.\ Dr.\ Oswaldo Luiz do Valle Costa \\[0.4em]
+    \textbf{Departamento:}       & Eng.\ de Telecomunicações e Controle (EPUSP) \\[0.4em]
+    \textbf{Tema:}               & Otimização Estocástica \\[0.4em]
+    \textbf{Instituição-modelo:} & Banco Modelo S.A.\ (fictício) \\[0.4em]
+    \textbf{Data-base:}          & Dezembro de 2024 \\[0.4em]
+    \textbf{Versão:}             & 1.0 --- \textit{Baseline} QP \\
+  \end{tabular}
+
+  \vfill
+  {\normalsize São Paulo, \the\year}
+\end{titlepage}
+
+%% ---- RESUMO ------------------------------------------------
+\begin{abstract}
+\noindent
+Este relatório documenta a implementação de um sistema computacional de
+\textit{Asset \& Liability Management} (ALM) bancário desenvolvido como
+\textit{baseline} de pesquisa para o doutorado em Engenharia de Sistemas
+(PPGEE-Poli/USP), sob orientação do Prof.~Dr.\ Oswaldo Luiz do Valle Costa.
+O sistema integra oito módulos: modelagem do balanço patrimonial, geração de
+cenários de taxa de juros via Nelson-Siegel \citep{NelsonSiegel1987}, motor de
+fluxos de caixa, otimizador quadrático (QP) de alocação de carteira, gestão
+de liquidez regulatória (LCR e NSFR) \citep{BCBS238,BCBS295} e análise de
+capital econômico via RAROC \citep{BCBS2006}.
+Para o Banco Modelo S.A.\ (ativo total de \brlBi{532}), o sistema produz um
+NII anual de \brlM{61.026} no cenário-base, identifica um \textit{duration
+gap} de 1,742~anos em posição \textit{long}, e demonstra que a fronteira
+eficiente NII $\times$ risco de taxa é praticamente plana --- o custo de
+reduzir o DV01 \textit{gap} de \brlM{92,7}/bp para \brlM{44}/bp representa
+apenas 0,54\% do NII total.
+A análise de RAROC revela que quatro segmentos operam abaixo do
+\textit{hurdle rate} de 15\%, evidenciando subsídio implícito de crédito
+direcionado \citep{Bonomo2016}.
+O \textit{baseline} constitui referência quantitativa para a proposta de
+modelo de otimização estocástica multi-período, objeto central da tese.
+
+\medskip
+\noindent\textbf{Palavras-chave:} ALM bancário; NIM; ALCO; otimização
+estocástica; IRRBB; LCR; NSFR; RAROC; capital econômico; Nelson-Siegel;
+programação quadrática; mercados completos.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
+%% =============================================================
+\section{Introdução}
+\label{sec:intro}
+%% =============================================================
+
+A gestão de ativos e passivos (\textit{Asset \& Liability Management} --- ALM)
+constitui uma das funções centrais da administração bancária moderna. O Comitê
+de Ativos e Passivos (ALCO --- \textit{Asset \& Liability Committee}) é o órgão
+colegiado responsável por traduzir as decisões de ALM em \textit{guidance}
+operacional: limites de \textit{duration}, metas de NIM
+(\textit{Net Interest Margin}), estratégias de hedge e alocação de capital.
+
+Do ponto de vista quantitativo, este problema é intrinsecamente multi-objetivo
+e multi-período: o banco deseja simultaneamente maximizar o NIM, controlar o
+risco de taxa (IRRBB), manter \textit{buffers} de liquidez (LCR e NSFR) e
+preservar adequação de capital \citep{BCBS368}. Estas dimensões são
+frequentemente conflitantes, criando um espaço de decisão rico para
+investigação científica no campo da Engenharia de Sistemas.
+
+\subsection{Motivação e Contexto Acadêmico}
+
+A literatura sobre ALM bancário apresenta três gerações de modelos:
+
+\begin{enumerate}
+  \item \textbf{Modelos determinísticos estáticos} \citep{Klein1971,Monti1972}:
+    formulação de lucro máximo com \textit{spread} ótimo, ignorando dinâmica
+    temporal e incerteza de taxas.
+  \item \textbf{Modelos de programação estocástica}
+    \citep{KusyZiemba1986,KouwenbergZenios2001}: incorporam cenários de taxa
+    e restrições de liquidez em horizonte multi-período.
+  \item \textbf{Modelos de otimização robusta e controle estocástico}
+    \citep{BirgeLouveaux2011,Fabozzi2007}: tratam explicitamente a
+    ambiguidade distribucional dos cenários de mercado.
+\end{enumerate}
+
+A prática bancária brasileira ainda opera predominantemente com a primeira
+geração, usando \textit{gap reports} e análise de sensibilidade de forma
+não integrada. Esta pesquisa visa construir um \textit{baseline} da segunda
+geração e propor extensões para a terceira, com foco no problema de
+otimização do NIM sob contornos regulatórios em mercados completos ---
+tema alinhado à área de concentração em Engenharia de Sistemas do
+PPGEE-Poli/USP e à experiência do orientador em controle estocástico
+\citep{Costa2005}.
+
+\subsection{Objetivos}
+
+\begin{enumerate}
+  \item Implementar um sistema computacional completo de ALM para um banco de
+    varejo de médio-grande porte com calibração realista para o mercado
+    brasileiro (dezembro de 2024).
+  \item Estabelecer um \textit{baseline} metodológico robusto baseado em
+    Programação Quadrática (QP), documentado e reprodutível.
+  \item Identificar as limitações estruturais do \textit{baseline} que motivem
+    a contribuição científica original da tese.
+\end{enumerate}
+
+\subsection{Estrutura do Documento}
+
+O relatório está organizado em oito seções: modelagem do balanço
+(\S\ref{sec:balanco}), cenários de mercado (\S\ref{sec:cenarios}), motor de
+fluxos de caixa (\S\ref{sec:cashflow}), otimizador QP (\S\ref{sec:optimizer}),
+módulos de liquidez e capital (\S\ref{sec:liqcap}), perspectivas de pesquisa
+(\S\ref{sec:perspectivas}), arquitetura (\S\ref{sec:arquitetura}) e conclusões
+(\S\ref{sec:conclusoes}).
+
+%% =============================================================
+\section{Modelagem do Balanço Patrimonial}
+\label{sec:balanco}
+%% =============================================================
+
+\subsection{Estrutura Geral}
+
+O Banco Modelo S.A.\ é uma instituição financeira fictícia calibrada para
+representar um banco de varejo brasileiro de médio-grande porte, com
+data-base de 31 de dezembro de 2024.
+A Tabela~\ref{tab:balanco_resumo} apresenta os agregados patrimoniais.
+
+\begin{table}[H]
+\centering
+\caption{Resumo do Balanço Patrimonial --- Banco Modelo S.A.\ (R\$ milhões)}
+\label{tab:balanco_resumo}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Item} & \textbf{R\$ M} & \textbf{\% Ativo} \\
+\midrule
+\multicolumn{3}{l}{\textit{Ativo}} \\
+\quad Crédito Total                  & 342.800 & 64,44\% \\
+\quad Títulos e Valores Mobiliários  & 114.600 & 21,54\% \\
+\quad Disponibilidades e Compulsório &  40.500 &  7,61\% \\
+\quad Operações Interbancárias       &  11.200 &  2,11\% \\
+\quad Outros Ativos                  &  22.900 &  4,30\% \\
+\midrule
+\textbf{Total Ativo}                 & \textbf{532.000} & \textbf{100,00\%} \\
+\midrule
+\multicolumn{3}{l}{\textit{Passivo}} \\
+\quad CDB (várias séries)            & 116.300 & 21,86\% \\
+\quad Depósitos à Vista e Poupança   &  88.500 & 16,63\% \\
+\quad Letras Financeiras             &  50.000 &  9,40\% \\
+\quad LCI / LCA                      &  40.200 &  7,56\% \\
+\quad \textit{Funding} Externo       &  20.800 &  3,91\% \\
+\quad Outros Passivos                &  23.700 &  4,46\% \\
+\midrule
+\textbf{Total Passivo}               & \textbf{339.500} & \textbf{63,82\%} \\
+\midrule
+\textbf{Patrimônio Líquido}          & \textbf{192.100} & \textbf{36,11\%} \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{01_composicao_balanco.png}
+  \caption{Composição do balanço patrimonial por categoria de ativo e passivo.
+           O crédito representa 64,44\% do ativo total; CDB e depósitos
+           respondem pela maior fatia do \textit{funding}.}
+  \label{fig:composicao_balanco}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Indicadores de Capital Regulatório}
+
+O sistema calcula automaticamente os indicadores de adequação de capital
+conforme a Resolução BCB 4.958/2021 e Basileia III \citep{BCBS2006}.
+Os resultados estão na Tabela~\ref{tab:capital_regulatorio}.
+
+\begin{table}[H]
+\centering
+\caption{Indicadores de Capital Regulatório --- Data-base Dez/2024}
+\label{tab:capital_regulatorio}
+\begin{tabular}{lrrl}
+\toprule
+\textbf{Indicador} & \textbf{Valor} & \textbf{Mínimo} & \textbf{Status} \\
+\midrule
+RWA Total                     & R\$ 265.690 M & ---    & --- \\
+Patrimônio de Referência (PR) & R\$ 37.800 M  & ---    & --- \\
+Índice de Basileia (IB)       & 14,23\%       & 10,5\% & \textcolor{almgreen}{\textbf{OK}} \\
+CET1 \textit{Ratio}           & 10,73\%       & 7,0\%  & \textcolor{almgreen}{\textbf{OK}} \\
+\textit{Leverage}             & 2,77$\times$  & ---    & --- \\
+Crédito / Ativo               & 64,44\%       & ---    & --- \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{02_rwa_capital.png}
+  \caption{Distribuição do RWA por categoria de ativo e posição de capital.
+           O crédito a pessoas físicas e jurídicas representa a maior parcela
+           do ativo ponderado pelo risco.}
+  \label{fig:rwa_capital}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Mix de Indexadores}
+
+A estrutura de indexação do balanço determina diretamente a sensibilidade
+do NIM a diferentes cenários de taxa.
+A Figura~\ref{fig:mix_indexadores} apresenta o mix ativo vs.\ passivo.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{03_mix_indexadores.png}
+  \caption{Mix de indexadores --- ativo vs.\ passivo. No ativo, 58,2\% é
+           indexado ao CDI; no passivo, 60,5\%. A posição em IPCA é
+           assimétrica: o passivo detém proporção maior, criando exposição
+           líquida a inflação.}
+  \label{fig:mix_indexadores}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+%% =============================================================
+\section{Cenários de Mercado}
+\label{sec:cenarios}
+%% =============================================================
+
+\subsection{Modelagem da Curva de Juros: Nelson-Siegel}
+
+As curvas de juros são geradas via modelo de \citet{NelsonSiegel1987},
+calibrado com dados de mercado de dezembro de 2024:
+
+\begin{equation}
+  r(\tau) = \beta_0
+    + \beta_1 \cdot \frac{1 - e^{-\tau/\lambda}}{\tau/\lambda}
+    + \beta_2 \cdot \left[
+        \frac{1 - e^{-\tau/\lambda}}{\tau/\lambda} - e^{-\tau/\lambda}
+      \right]
+  \label{eq:nelson_siegel}
+\end{equation}
+
+\noindent onde $r(\tau)$ é a taxa \textit{spot} ao prazo $\tau$ (anos),
+$\beta_0$ é o fator de nível (taxa de longo prazo), $\beta_1$ o fator de
+inclinação, $\beta_2$ o fator de curvatura e $\lambda$ o parâmetro de
+decaimento. O modelo foi proposto como forma parcimoniosa de representar
+toda a estrutura a termo com apenas quatro parâmetros
+\citep{NelsonSiegel1987}.
+
+Os parâmetros calibrados para o cenário-base estão na
+Tabela~\ref{tab:nelson_siegel}.
+
+\begin{table}[H]
+\centering
+\caption{Parâmetros Nelson-Siegel --- Calibração Dez/2024 (Cenário-Base)}
+\label{tab:nelson_siegel}
+\begin{tabular}{lrl}
+\toprule
+\textbf{Parâmetro} & \textbf{Valor} & \textbf{Interpretação} \\
+\midrule
+$\beta_0$ & 12,80\% & Nível de longo prazo \\
+$\beta_1$ & $-1,30\%$ & Inclinação (spread curto $-$ longo) \\
+$\beta_2$ & $-2,50\%$ & Curvatura \\
+$\lambda$ & 3,50 & Parâmetro de decaimento \\
+\midrule
+SELIC (âncora curta) & 11,75\% & Taxa \textit{overnight} \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\subsection{Cenários de Estresse}
+
+São gerados três cenários de taxa de juros:
+
+\begin{description}
+  \item[\textbf{Base}] Curva calibrada a Dez/2024, SELIC = 11,75\% a.a.
+  \item[\textbf{Stress Alta}] Choque paralelo de $+200$ bps na curva DI.
+  \item[\textbf{Stress Baixa}] Choque paralelo de $-250$ bps na curva DI.
+\end{description}
+
+Os cenários seguem a metodologia BCBS~368 \citep{BCBS368} para IRRBB.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{04_curvas_juros_cenarios.png}
+  \caption{Curvas de juros DI e IPCA para os três cenários. A curva base
+           apresenta leve inversão para prazos intermediários, refletindo
+           expectativa de queda gradual da SELIC.}
+  \label{fig:curvas_juros}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Spreads de Crédito}
+
+Os \textit{spreads} de crédito por segmento são calibrados com referências
+de mercado e sensibilizados nos cenários de estresse.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{05_spreads_credito.png}
+  \caption{\textit{Spreads} de crédito por segmento nos três cenários
+           (escala logarítmica). No cenário de estresse de alta, os
+           \textit{spreads} ampliam-se, refletindo deterioração das
+           condições de crédito e aumento do prêmio de risco.}
+  \label{fig:spreads_credito}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+%% =============================================================
+\section{Motor de Fluxos de Caixa e NIM}
+\label{sec:cashflow}
+%% =============================================================
+
+\subsection{Gap de Reprecificação}
+
+O \textit{gap} de reprecificação mensura a diferença entre ativos e passivos
+que repreci\-ficam dentro de cada \textit{bucket} temporal, conforme
+\citet{SaundersWalter2011} e as diretrizes do BCBS~368 \citep{BCBS368}.
+Os resultados estão na Tabela~\ref{tab:gap_reprecificacao} e na
+Figura~\ref{fig:gap_reprecificacao}.
+
+\begin{table}[H]
+\centering
+\caption{Gap de Reprecificação por \textit{Bucket} Temporal (R\$ milhões)}
+\label{tab:gap_reprecificacao}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Bucket} & \textbf{Ativo} & \textbf{Passivo} & \textbf{Gap} &
+  \textbf{Gap Cum.} & \textbf{DV01 Gap} \\
+\midrule
+O/N--1M  & 200.800 & 246.000 & $-$45.200 & $-$45.200 & $+$0,01 \\
+1M--3M   &       0 &       0 &         0 & $-$45.200 & $+$0,00 \\
+3M--6M   &       0 &       0 &         0 & $-$45.200 & $+$0,00 \\
+6M--1A   &  34.000 &  23.000 & $+$11.000 & $-$34.200 & $+$0,20 \\
+1A--2A   &  40.900 &   9.800 & $+$31.100 &  $-$3.100 & $+$4,20 \\
+2A--3A   &  40.800 &  16.200 & $+$24.600 & $+$21.500 & $+$5,74 \\
+3A--5A   & 102.500 &  12.500 & $+$90.000 & $+$111.500& $+$29,73 \\
+5A--7A   &  28.000 &  32.000 &  $-$4.000 & $+$107.500& $-$0,65 \\
+7A--10A  &       0 &       0 &         0 & $+$107.500& $+$0,00 \\
+10A+     &  85.000 &       0 & $+$85.000 & $+$192.500& $+$53,44 \\
+\midrule
+\textbf{Total} & \textbf{532.000} & \textbf{339.500} & & &
+  \textbf{$+$92,67} \\
+\bottomrule
+\end{tabular}
+\nota{DV01 Gap em R\$\,M/bp. Gap positivo indica posição \textit{long} no
+      \textit{bucket}.}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{infobox}[Interpretação do Gap de Reprecificação]
+O gap negativo em O/N--1M ($-$R\$\,45,2\,bi) é típico de banco de varejo:
+os passivos CDI (depósitos, CDB de curto prazo) repreci\-ficam antes dos
+ativos de crédito de médio prazo. O gap cumulativo inverte no bucket 2A--3A
+e atinge R\$\,192,5\,bi positivo em 10A+, sinalizando posição \textit{long}
+de \textit{duration}.
+\end{infobox}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{06_gap_reprecificacao.png}
+  \caption{Gap de reprecificação por \textit{bucket}: barras representam
+           volumes de ativo (azul) e passivo (vermelho) por prazo; a linha
+           tracejada representa o gap cumulativo.}
+  \label{fig:gap_reprecificacao}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Projeção de NII e NIM}
+
+O NII (\textit{Net Interest Income}) é calculado mensalmente para cada produto.
+A Tabela~\ref{tab:nii_resumo} apresenta os resultados anuais por cenário.
+
+\begin{table}[H]
+\centering
+\caption{Projeção de NII --- 12 meses, por cenário (R\$ milhões)}
+\label{tab:nii_resumo}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Cenário} & \textbf{NII Acum.} & \textbf{NIM Médio} &
+  \textbf{Receita} & \textbf{Custo} & \textbf{$\Delta$ vs.\ Base} \\
+\midrule
+Base          & 61.026 & 11,47\% &  95.703 & 34.677 & --- \\
+Stress Alta   & 60.668 & 11,40\% & 104.595 & 43.927 & $-$358 \\
+Stress Baixa  & 61.353 & 11,53\% &  86.970 & 25.617 & $+$327 \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{07_nii_cenarios.png}
+  \caption{NII mensal acumulado para os três cenários de taxa de juros.
+           A estabilidade relativa reflete o alto grau de indexação ao CDI
+           em ambos os lados do balanço.}
+  \label{fig:nii_cenarios}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{08_nim_cenarios.png}
+  \caption{NIM (\% a.a.) por cenário ao longo dos 12 meses de projeção.
+           O NIM mantém-se entre 11,40\% e 11,53\% entre os cenários de
+           alta e baixa, respectivamente.}
+  \label{fig:nim_cenarios}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Duration e DV01}
+
+A \textit{duration} modificada é calculada analiticamente por produto
+\citep{Fabozzi1996}:
+
+\begin{equation}
+  D_{\text{mod}} = \frac{D_{\text{Mac}}}{1 + y/m}
+  \label{eq:duration_mod}
+\end{equation}
+
+\noindent onde $D_{\text{Mac}}$ é a \textit{duration} de Macaulay,
+$y$ a \textit{yield} e $m$ a frequência de cupom.
+O DV01 (\textit{Dollar Value of 1 basis point}) é:
+
+\begin{equation}
+  \text{DV01} = \text{Saldo} \times D_{\text{mod}} \times 0{,}0001
+  \label{eq:dv01}
+\end{equation}
+
+Os resultados consolidados são:
+\begin{itemize}
+  \item \textit{Duration} ativo: 2,047 anos;
+  \item \textit{Duration} passivo: 0,478 anos;
+  \item \textbf{\textit{Duration gap}: 1,742 anos} (posição \textit{long});
+  \item DV01 ativo: R\$\,108,9\,M/bp;
+  \item DV01 passivo: R\$\,16,2\,M/bp;
+  \item \textbf{DV01 gap: R\$\,92,7\,M/bp}.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{09_duration_dv01.png}
+  \caption{DV01 por produto e \textit{duration} modificada média. A carteira
+           de crédito imobiliário e os títulos NTN-B longa concentram o maior
+           DV01 do ativo.}
+  \label{fig:duration_dv01}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{10_sensibilidade_nii.png}
+  \caption{Sensibilidade do NII a choques paralelos de $-300$ a $+300$ bps,
+           metodologia IRRBB \citep{BCBS368}. A linearidade próxima reflete
+           a predominância de instrumentos CDI, que repreci\-ficam rapidamente.}
+  \label{fig:sensibilidade_nii}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{warnbox}[Risco de Taxa de Juros --- Posição LONG]
+Com \textit{duration gap} de 1,742 anos, o banco perde valor econômico
+quando taxas sobem. Um choque de $+100$ bps reduz o NII em aproximadamente
+R\$\,180\,M (sensibilidade linear). A posição está dentro do limite de
+$\pm 2{,}0$ anos (IRRBB), mas próxima do teto, justificando hedge ativo.
+\end{warnbox}
+
+%% =============================================================
+\section{Otimizador ALM: \textit{Baseline} QP}
+\label{sec:optimizer}
+%% =============================================================
+
+\subsection{Formulação do Problema}
+
+O otimizador ALM resolve o seguinte problema de Programação Quadrática (QP)
+\citep{Nocedal2006}:
+
+\begin{equation}
+\begin{aligned}
+  \max_{\mathbf{x}} \quad
+    & \text{NII}(\mathbf{x})
+      - \lambda \cdot \bigl[\text{DV01\_gap}(\mathbf{x})\bigr]^2 \\[6pt]
+  \text{s.a.} \quad
+    & \text{LCR}(\mathbf{x}) \geq 1{,}00 \\
+    & \text{NSFR}(\mathbf{x}) \geq 1{,}00 \\
+    & \text{IB}(\mathbf{x}) \geq 10{,}5\% \\
+    & \bigl|\text{DurGap}(\mathbf{x})\bigr| \leq 2{,}0 \text{ anos} \\
+    & \sum_s x_{\text{cred},s} + \sum_t \max(0,\,x_{\text{tvm},t})
+        = \sum_f x_{\text{cap},f} \\
+    & 0 \leq x_{\text{cred},s} \leq D_s(\text{spread}_s) \\
+    & 0 \leq x_{\text{cap},f} \leq V_f^{\max} \\
+    & x_{\text{tvm},t} \in \bigl[-S_t,\,V_t^{\text{disp}}\bigr] \\
+    & x_{\text{hedge},h} \in \bigl[-N_h^{\max},\,N_h^{\max}\bigr]
+\end{aligned}
+\label{eq:qp}
+\end{equation}
+
+\noindent onde $\lambda \geq 0$ é o parâmetro de aversão ao risco de taxa,
+$D_s(\cdot)$ é a curva de demanda do segmento $s$, $V_f^{\max}$ o volume
+máximo de captação e $N_h^{\max}$ o nocional máximo do instrumento de hedge $h$.
+
+\subsection{Variáveis de Decisão}
+
+O vetor $\mathbf{x} \in \R^{28}$, com $N = 7 + 6 + 8 + 7 = 28$ componentes:
+
+\begin{equation}
+  \mathbf{x} = \Bigl[
+    \underbrace{x_{\text{cred},1},\ldots,x_{\text{cred},7}}_{N_c=7},\;
+    \underbrace{x_{\text{cap},1},\ldots,x_{\text{cap},6}}_{N_f=6},\;
+    \underbrace{x_{\text{tvm},1},\ldots,x_{\text{tvm},8}}_{N_t=8},\;
+    \underbrace{x_{\text{hdg},1},\ldots,x_{\text{hdg},7}}_{N_h=7}
+  \Bigr]^{\!\top}
+  \label{eq:vetor_x}
+\end{equation}
+
+\subsection{Modelagem da Demanda de Crédito}
+
+A curva de demanda de crédito por segmento é modelada como:
+
+\begin{equation}
+  V_s(\text{spread}) = V_s^0 \cdot
+    \exp\!\bigl(-\varepsilon_s \cdot (\text{spread} - \text{spread}_s^0)\bigr)
+  \label{eq:demanda_credito}
+\end{equation}
+
+\noindent onde $\varepsilon_s > 0$ é a elasticidade \textit{spread}-volume.
+Esta especificação é consistente com o modelo Klein-Monti
+\citep{Klein1971,Monti1972} e com evidências empíricas de
+\citet{Coelho2012} para o Brasil.
+
+\subsection{Modelagem do Custo de Captação}
+
+\begin{equation}
+  c_f(v) = c_f^0 + \gamma_f \cdot
+    \left(\frac{v}{v_f^{\text{ref}}}\right)^{\!\delta_f}
+  \label{eq:custo_captacao}
+\end{equation}
+
+\noindent com $\delta_f = 0{,}5$: custo cresce com a raiz quadrada do volume.
+
+\subsection{Solver e Implementação}
+
+O problema \eqref{eq:qp} é resolvido via \texttt{scipy.optimize.minimize}
+com método SLSQP (\textit{Sequential Least Squares Programming})
+\citep{Kraft1988}.
+
+\begin{lstlisting}[caption={Estrutura central do otimizador
+                   (\texttt{ALMOptimizer.otimizar})},
+                   label={lst:optimizer}]
+resultado = minimize(
+    fun    = lambda x: -NII(x) + lambda_risco * DV01_gap(x)**2,
+    x0     = 0.2 * upper_bounds,
+    method = "SLSQP",
+    bounds = Bounds(lb, ub),
+    constraints = [
+        {"type":"ineq", "fun": lambda x: LCR(x)    - 1.00 },
+        {"type":"ineq", "fun": lambda x: NSFR(x)   - 1.00 },
+        {"type":"ineq", "fun": lambda x: IB(x)     - 0.105},
+        {"type":"ineq", "fun": lambda x: 2.0 - abs(DurGap(x))},
+        {"type":"eq",   "fun": lambda x: sum(usos) - sum(fontes)},
+    ],
+    options={"maxiter": 1000, "ftol": 1e-8},
+)
+\end{lstlisting}
+
+\subsection{Fronteira Eficiente}
+
+A fronteira eficiente é traçada variando $\lambda \in [10^{-4}, 1{,}0]$
+com 12 pontos em escala logarítmica. Os resultados estão na
+Tabela~\ref{tab:fronteira_eficiente} e na Figura~\ref{fig:fronteira_eficiente}.
+
+\begin{table}[H]
+\centering
+\caption{Fronteira Eficiente --- NII $\times$ Risco de Taxa}
+\label{tab:fronteira_eficiente}
+\begin{tabular}{rrrrrr}
+\toprule
+$\lambda$ & \textbf{NII Total (R\$M)} & \textbf{DV01 Gap} &
+  \textbf{Dur.\ Gap (a)} & \textbf{LCR} & \textbf{IB} \\
+\midrule
+0,0001 & 61.830 & 90,4 & 1,58 & 359\% & 13,8\% \\
+0,0012 & 61.826 & 88,0 & 1,54 & 359\% & 13,8\% \\
+0,0066 & 61.823 & 75,5 & 1,32 & 359\% & 13,8\% \\
+0,0152 & 61.802 & 55,6 & 0,97 & 359\% & 13,8\% \\
+0,0811 & 61.787 & 48,0 & 0,84 & 360\% & 13,8\% \\
+1,0000 & 61.499 & 43,9 & 0,77 & 362\% & 13,9\% \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{11_fronteira_eficiente.png}
+  \caption{Fronteira eficiente NII $\times$ DV01 gap. Os três pontos
+           destacados correspondem às estratégias de máximo NII
+           ($\lambda = 0{,}0001$), equilíbrio ($\lambda = 0{,}01$)
+           e mínimo risco ($\lambda = 1{,}0$).}
+  \label{fig:fronteira_eficiente}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{resultbox}[Achado Central --- Fronteira Eficiente Quase Plana]
+Reduzir o DV01 gap de \brlM{90,4}/bp para \brlM{43,9}/bp custa apenas
+\brlM{331} de NII, ou 0,54\% do NII total. O custo do hedge de taxa é
+relativamente baixo. A persistência de bancos brasileiros com
+\textit{duration gap} elevado sugere restrições institucionais, contábeis
+(EVE vs.\ NIM) ou de incentivos gerenciais não capturadas neste modelo
+--- motivação direta para a tese.
+\end{resultbox}
+
+\subsection{Alocação Ótima de Crédito e Captação}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{12_alocacao_credito.png}
+  \caption{Volume de crédito novo por segmento para as três estratégias.
+           O otimizador aloca sistematicamente em crédito pessoal, veículos
+           e PJ, nunca em imobiliário ou rural (RAROC negativo no modelo).}
+  \label{fig:alocacao_credito}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{13_mix_captacao.png}
+  \caption{Mix de captação nova ótima por instrumento. A preferência por
+           CDB CDI longo e LF IPCA reflete menor custo e contribuição
+           positiva para o NSFR.}
+  \label{fig:mix_captacao}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{14_restricoes_regulatorias.png}
+  \caption{Atendimento às restrições regulatórias pós-otimização para as
+           três estratégias. O NSFR é a restrição ativa (\textit{binding})
+           em todas as soluções; LCR e Índice de Basileia mantêm folga
+           substancial.}
+  \label{fig:restricoes}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{15_hedge_dv01.png}
+  \caption{Posição nocional de hedge e DV01 gap resultante por estratégia.
+           A estratégia de mínimo risco utiliza o limite máximo de nocional
+           em futuros DI e \textit{swaps} DI$\times$Pré.}
+  \label{fig:hedge_dv01}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+%% =============================================================
+\section{Módulos de Liquidez e Capital}
+\label{sec:liqcap}
+%% =============================================================
+
+\subsection{Stress Test de Liquidez --- LCR}
+
+O LCR (\textit{Liquidity Coverage Ratio}) é calculado conforme a Circular BCB
+3.644/2013 e Basileia III \citep{BCBS238}:
+
+\begin{equation}
+  \text{LCR} = \frac{\text{HQLA}}{\text{NCO}_{30}} \geq 1{,}00, \quad
+  \text{NCO} = \text{Out}_{30d} -
+    \min\!\bigl(\text{In}_{30d},\; 0{,}75\cdot\text{Out}_{30d}\bigr)
+  \label{eq:lcr}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{Resultado do Stress Test LCR --- 30 dias}
+\label{tab:lcr_stress}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Componente} & \textbf{R\$ M} & \textbf{Detalhe} \\
+\midrule
+HQLA Nível 1 (0\% \textit{haircut})  & 152.200 & LFT, Reservas BCB \\
+HQLA Nível 2A ($-$15\%)              &   9.350 & CDB outros bancos \\
+HQLA Nível 2B ($-$25\%)              &   2.325 & Debêntures A \\
+\midrule
+\textbf{HQLA Total}                  & \textbf{163.875} & \\
+Outflows brutos (30d)                &  22.931 & Estresse Basileia III \\
+Inflows (cap 75\%)                   &  10.427 & \\
+\textbf{NCO}                         & \textbf{12.504} & \\
+\midrule
+\textbf{LCR = HQLA / NCO}           & \textbf{1.311\%} &
+  \textcolor{almgreen}{$\checkmark$ Aprovado} \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{16_stress_test_lcr.png}
+  \caption{Decomposição do \textit{stress test} LCR: composição HQLA por
+           nível regulatório e principais \textit{outflows} líquidos em
+           cenário de estresse. LCR de 1.311\% indica buffer muito acima
+           do mínimo exigido.}
+  \label{fig:stress_lcr}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{NSFR e Projeção Dinâmica}
+
+O NSFR (\textit{Net Stable Funding Ratio}) \citep{BCBS295} avalia a
+sustentabilidade estrutural do \textit{funding}:
+
+\begin{equation}
+  \text{NSFR} = \frac{\text{ASF}}{\text{RSF}} \geq 1{,}00
+  \label{eq:nsfr}
+\end{equation}
+
+\noindent O resultado base é NSFR = 160,9\%
+(ASF = R\$\,442,6\,bi; RSF = R\$\,275,0\,bi).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{17_projecao_lcr_nsfr.png}
+  \caption{Projeção dinâmica de LCR e NSFR ao longo de 12 meses para os
+           três cenários de crescimento. O NSFR comprime-se mais rapidamente
+           e torna-se a restrição ativa (\textit{binding}) no otimizador.}
+  \label{fig:projecao_lcr_nsfr}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Custo do Buffer de Liquidez}
+
+O custo de oportunidade de cada produto HQLA é:
+
+\begin{equation}
+  \text{Custo}_{\text{HQLA}} =
+    \text{Saldo} \times \bigl(r_{\text{alt}} - r_{\text{HQLA}}\bigr)
+  \label{eq:custo_hqla}
+\end{equation}
+
+\noindent onde $r_{\text{alt}}$ é a taxa da melhor aplicação alternativa
+(capital de giro PJ ao CDI + 4,5\%). O custo total é \brlM{9.400}/ano.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{18_custo_buffer_hqla.png}
+  \caption{Custo de carregamento por produto HQLA (R\$\,M/ano). LFT e
+           compulsório respondem pela maior parte do custo de oportunidade
+           total de \brlM{9.400}/ano.}
+  \label{fig:custo_hqla}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Capital Econômico e RAROC}
+
+O capital econômico (CE) é calculado via fórmula IRB \citep{BCBS2006}:
+
+\begin{equation}
+  \text{CE}_s = \text{EAD}_s \cdot \text{LGD}_s \cdot
+    \left[
+      \Phi\!\left(
+        \frac{\Phi^{-1}(\text{PD}_s) + \sqrt{\rho_s}\;\Phi^{-1}(\alpha)}
+             {\sqrt{1-\rho_s}}
+      \right) - \text{PD}_s
+    \right] \cdot \text{MA}
+  \label{eq:ce_irb}
+\end{equation}
+
+\noindent onde $\Phi$ é a CDF normal padrão, $\alpha = 99{,}9\%$ o nível de
+confiança, $\rho_s$ a correlação sistêmica e MA o ajuste de maturidade.
+O RAROC é calculado conforme \citet{MertonPerold1993}:
+
+\begin{equation}
+  \text{RAROC}_s =
+    \frac{\text{Receita}_s - \text{Custo Funding}_s
+          - \text{PE}_s - \text{Custo Op}_s}
+         {\text{CE}_s}
+  \label{eq:raroc}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{RAROC por Linha de Negócio (\textit{Hurdle Rate}: 15\%)}
+\label{tab:raroc}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Segmento} & \textbf{EAD} & \textbf{CE} & \textbf{NII Líq.} &
+  \textbf{RAROC} & \textbf{EVA} & \textbf{OK?} \\
+& (R\$\,bi) & (R\$\,bi) & (R\$\,M) & (\%) & (R\$\,M) & \\
+\midrule
+Cartão PF       & 19,5 & 3,70 & 32.879 &  888,1 & $+$32.324 & \textcolor{almgreen}{$\checkmark$} \\
+Consignado PF   & 62,0 & 3,12 &  5.602 &  179,6 & $+$5.134  & \textcolor{almgreen}{$\checkmark$} \\
+Pessoal PF      & 24,0 & 3,11 &  4.730 &  152,3 & $+$4.265  & \textcolor{almgreen}{$\checkmark$} \\
+Veículos PF     & 31,0 & 2,73 &  3.802 &  139,1 & $+$3.392  & \textcolor{almgreen}{$\checkmark$} \\
+Corporativo PJ  & 52,0 & 4,61 &    835 &   18,1 & $+$143    & \textcolor{almgreen}{$\checkmark$} \\
+Capital Giro PJ & 38,0 & 4,31 &    397 &    9,2 & $-$249    & \textcolor{almred}{$\times$} \\
+Imobiliário PF  & 85,0 & 6,16 & $-$1.424 & $-$23,1 & $-$2.348 & \textcolor{almred}{$\times$} \\
+Rural           & 16,8 & 0,79 &  $-$439 & $-$55,3 &  $-$559 & \textcolor{almred}{$\times$} \\
+Trade Finance   & 14,5 & 0,18 &  $-$702 & $-$392,9& $-$729  & \textcolor{almred}{$\times$} \\
+\midrule
+\textbf{Total}  & 342,8 & 28,71 & 45.680 & 159,1 & $+$41.373 & --- \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{19_raroc_linhas_negocio.png}
+  \caption{RAROC por segmento de negócio versus \textit{hurdle rate} de 15\%.
+           Segmentos à esquerda da linha vermelha destroem valor econômico
+           (EVA negativo).}
+  \label{fig:raroc}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+\subsection{Pricing Mínimo via RAROC}
+
+O \textit{spread} mínimo para atingir RAROC $\geq 15\%$ é
+\citep{ResteSironi2007}:
+
+\begin{equation}
+  r_s^{\min} = r_{\text{fund}}
+             + \frac{\text{PE}_s}{\text{EAD}_s}
+             + c_{\text{op},s}
+             + \bar{r} \cdot \frac{\text{CE}_s}{\text{EAD}_s}
+  \label{eq:pricing_minimo}
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{Pricing Mínimo por Segmento (RAROC $\geq$ 15\%)}
+\label{tab:pricing}
+\begin{tabular}{lrrrl}
+\toprule
+\textbf{Segmento} & \textbf{Taxa Atual} & \textbf{Taxa Mín.} &
+  \textbf{Folga} & \textbf{OK?} \\
+\midrule
+Cartão PF       & 189,00\% & 23,24\% & $+$165,76 pp & \textcolor{almgreen}{$\checkmark$} \\
+Pessoal PF      &  38,40\% & 20,63\% & $+$17,77 pp  & \textcolor{almgreen}{$\checkmark$} \\
+Veículos PF     &  26,80\% & 15,86\% & $+$10,94 pp  & \textcolor{almgreen}{$\checkmark$} \\
+Consignado PF   &  22,50\% & 14,22\% &  $+$8,28 pp  & \textcolor{almgreen}{$\checkmark$} \\
+Corporativo PJ  &  14,55\% & 14,27\% &  $+$0,28 pp  & \textcolor{almgreen}{$\checkmark$} \\
+Capital Giro PJ &  16,25\% & 16,91\% &  $-$0,66 pp  & \textcolor{almred}{$\times$} \\
+Imobiliário PF  &  10,50\% & 13,26\% &  $-$2,76 pp  & \textcolor{almred}{$\times$} \\
+Rural           &  10,50\% & 13,82\% &  $-$3,32 pp  & \textcolor{almred}{$\times$} \\
+Trade Finance   &   7,40\% & 12,42\% &  $-$5,02 pp  & \textcolor{almred}{$\times$} \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{20_pricing_capital_economico.png}
+  \caption{Comparação entre taxa atual e taxa mínima econômica por segmento,
+           e capital econômico como percentual do EAD. Segmentos regulados
+           (imobiliário, rural) são mantidos por exigências de crédito
+           direcionado \citep{Bonomo2016}, não por retorno econômico.}
+  \label{fig:pricing}
+  \fonte{Elaborado pelo autor.}
+\end{figure}
+
+%% =============================================================
+\section{Limitações do \textit{Baseline} e Perspectivas de Pesquisa}
+\label{sec:perspectivas}
+%% =============================================================
+
+\subsection{Limitações Identificadas}
+
+A análise do \textit{baseline} QP revela três limitações estruturais que
+motivam diretamente a contribuição da tese:
+
+\subsubsection{Fronteira Eficiente Quase Plana}
+
+A variação de apenas 0,54\% no NIM ao longo da fronteira levanta a questão:
+\textit{por que bancos brasileiros mantêm posições \textit{long} de duration
+substanciais se o custo do hedge é tão baixo?} Possíveis explicações:
+\begin{itemize}
+  \item \textit{Hedge accounting} (CPC 48 / IFRS 9): custos de documentação
+    e teste de efetividade.
+  \item Assimetria EVE vs.\ NIM: gestão por NIM ignora o impacto no
+    valor econômico do patrimônio \citep{BCBS368}.
+  \item Fricções institucionais: CVA/DVA de derivativos, limites de nocional.
+  \item Incentivos gerenciais: metas de NIM de curto prazo desincentivam
+    hedges que custam margem imediata.
+\end{itemize}
+
+\subsubsection{NSFR como Restrição Dominante}
+
+O NSFR é a restrição ativa em todas as soluções. Modelos estáticos de período
+único não capturam como decisões de hoje afetam o NSFR nos próximos 12 meses
+à medida que o mix de captação amadurece \citep{KoussisPadgett2016}.
+
+\subsubsection{RAROC Negativo em Segmentos Regulados}
+
+Imobiliário, rural e \textit{trade finance} apresentam RAROC negativo, mas
+são mantidos por razões estratégicas, regulatórias (crédito direcionado) ou
+de externalidades não capturadas \citep{Bonomo2016,Coelho2012}.
+
+\subsection{Agenda de Pesquisa e Conexão com a Tese}
+
+\begin{enumerate}
+  \item \textbf{Programação Estocástica Multi-Período}
+    \citep{BirgeLouveaux2011,KusyZiemba1986}: reformulação de
+    \eqref{eq:qp} como problema de dois estágios:
+    \begin{equation}
+      \max_{\mathbf{x}_0,\,\mathbf{x}(\xi)} \;
+        \E_\xi\!\bigl[\text{NIM}(\mathbf{x}(\xi))\bigr]
+      \quad \text{s.a.\ restrições regulatórias } \forall\,\xi
+      \label{eq:stoch_prog}
+    \end{equation}
+    onde $\mathbf{x}_0$ são decisões do primeiro estágio (agora) e
+    $\mathbf{x}(\xi)$ as ações de rebalanceamento no cenário $\xi$.
+
+  \item \textbf{Otimização Robusta sob Ambiguidade}
+    \citep{BenTalNemirovski2002,Fabozzi2007}: especificar um conjunto
+    de ambiguidade $\mathcal{U}$ para os parâmetros Nelson-Siegel e
+    resolver o minimax:
+    \begin{equation}
+      \max_{\mathbf{x}} \min_{\xi \in \mathcal{U}}
+        \text{NIM}(\mathbf{x}, \xi)
+      \label{eq:robust}
+    \end{equation}
+
+  \item \textbf{Função Objetivo Multi-Dimensional} com Pareto-ótimo:
+    \begin{equation}
+      \max_{\mathbf{x}} \Bigl[
+        \text{NIM}(\mathbf{x}),\;
+        -\Delta\text{EVE}(\mathbf{x}),\;
+        \text{RAROC}_{\text{total}}(\mathbf{x})
+      \Bigr]
+      \label{eq:multiobj}
+    \end{equation}
+
+  \item \textbf{Controle Estocástico / MDP}
+    \citep{BertsekasSheve1978,Costa2005}: modelar o rebalanceamento
+    periódico como Processo de Decisão de Markov com estado
+    $s_t = (\text{balanço}_t, \mathbf{r}_t, \text{spreads}_t)$,
+    ação $a_t = \mathbf{x}_t$ e recompensa $r_t = \text{NIM}_t$.
+\end{enumerate}
+
+\subsection{Posicionamento da Contribuição}
+
+\begin{table}[H]
+\centering
+\caption{Posicionamento do Modelo Proposto vs.\ Literatura}
+\label{tab:posicionamento}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Dimensão} &
+  \textbf{Klein-Monti} &
+  \textbf{Kouw.\,\&\,Zenios} &
+  \textbf{Baseline QP} &
+  \textbf{Proposto} \\
+\midrule
+Horizonte           & Estático   & Multi-per.  & Um per.   & Multi-per. \\
+Incerteza taxa      & Nenhuma    & Cenários    & Paramét.  & Estoc./Robusta \\
+Liquidez regulat.   & Não        & Parcial     & Completa  & Completa+din. \\
+Capital econômico   & Não        & Não         & RAROC IRB & RAROC + EVE \\
+Crédito direcionado & Não        & Não         & Não       & Explícito \\
+Solver              & Analítico  & SLP         & SLSQP     & Estocástico \\
+\bottomrule
+\end{tabular}
+\fonte{Elaborado pelo autor, com base em \citet{Klein1971},
+       \citet{KouwenbergZenios2001} e \citet{BirgeLouveaux2011}.}
+\end{table}
+
+%% =============================================================
+\section{Arquitetura do Sistema Computacional}
+\label{sec:arquitetura}
+%% =============================================================
+
+\subsection{Estrutura de Módulos}
+
+O sistema é implementado em Python~3.12, com separação clara entre dados,
+modelos e saídas:
+
+\begin{lstlisting}[language=bash,
+                   caption={Estrutura de diretórios do projeto ALM Bank},
+                   label={lst:estrutura}]
+alm_bank/
+|-- main.py                        # Orquestrador (--fase 1..5)
+|-- models/
+|   |-- balance_sheet/
+|   |   |-- balance_sheet.py       # M1: Balanco patrimonial
+|   |   `-- market_scenarios.py    # M2: Curvas Nelson-Siegel
+|   |-- cash_flow/
+|   |   `-- cash_flow_engine.py    # M3: NII, duration, DV01
+|   |-- optimization/
+|   |   |-- alm_optimizer.py       # M4: QP (SLSQP)
+|   |   `-- market_environment.py  # M4a: Mercado disponivel
+|   |-- liquidity/
+|   |   `-- liquidity_module.py    # M6: LCR, NSFR, stress test
+|   |-- capital/
+|   |   `-- capital_module.py      # M7: RAROC, CE, pricing
+|   `-- dashboard/
+|       `-- dashboard_generator.py # M8: Dashboard HTML
+|-- data/
+|   |-- processed/                 # ativos.csv, passivos.csv, ...
+|   `-- scenarios/                 # curvas_di.csv, spreads, ...
+|-- outputs/
+|   |-- charts/                    # 20 figuras PNG
+|   |-- tables/                    # CSV/JSON por modulo
+|   `-- reports/                   # dashboard_alm.html
+`-- docs/                          # Este documento LaTeX
+\end{lstlisting}
+
+\subsection{Fluxo de Execução}
+
+\begin{description}
+  \item[\textbf{Fase 1}] Balanço com 35 produtos, calibração Nelson-Siegel,
+    3 cenários. Saídas: \texttt{ativos.csv}, \texttt{kpis\_balanco.json}.
+  \item[\textbf{Fase 2}] Motor de fluxo de caixa: 10 \textit{buckets},
+    NII/NIM mensais, \textit{duration}/DV01 por produto.
+    Saídas: \texttt{gap\_reprecificacao.csv}, \texttt{duration\_gap.json}.
+  \item[\textbf{Fase 3}] Otimizador QP, 28 variáveis, 5 restrições,
+    fronteira eficiente com 12 pontos.
+    Saídas: \texttt{fronteira\_eficiente\_base.csv}.
+  \item[\textbf{Fase 4}] Stress test LCR, NSFR, custo HQLA, RAROC, pricing.
+    Saídas: \texttt{stress\_test\_lcr.csv}, \texttt{raroc\_linhas\_negocio.csv}.
+  \item[\textbf{Fase 5}] Dashboard HTML com 6 abas:
+    \texttt{outputs/reports/dashboard\_alm.html}.
+\end{description}
+
+%% =============================================================
+\section{Conclusões}
+\label{sec:conclusoes}
+%% =============================================================
+
+Este relatório apresentou a implementação completa de um sistema de ALM
+bancário em Python, calibrado para o mercado brasileiro de dezembro de 2024,
+que constitui o \textit{baseline} quantitativo da pesquisa de doutorado no
+PPGEE-Poli/USP. Os principais resultados para o Banco Modelo S.A.\ são:
+
+\begin{enumerate}
+  \item \textbf{NIM base}: R\$\,61,0\,bi/ano, NIM de 11,47\%; estável entre
+    cenários ($\pm 0{,}3$\,bi), refletindo alto grau de indexação ao CDI.
+
+  \item \textbf{Risco de taxa}: \textit{Duration gap} de 1,742 anos
+    (\textit{long}), DV01 gap de R\$\,92,7\,M/bp. A fronteira eficiente
+    demonstra que hedgear completamente custa apenas 0,54\% do NIM.
+
+  \item \textbf{Liquidez}: LCR de 1.311\% e NSFR de 160,9\%; o NSFR é a
+    restrição ativa no otimizador. Custo do buffer HQLA: \brlM{9.400}/ano.
+
+  \item \textbf{Capital econômico}: RAROC total de 159\%; quatro segmentos
+    abaixo do \textit{hurdle rate} de 15\% \citep{Bonomo2016}.
+
+  \item \textbf{Pricing}: Cinco segmentos com \textit{spread} atual acima
+    do mínimo; quatro abaixo do mínimo para RAROC $\geq 15\%$.
+\end{enumerate}
+
+As limitações identificadas --- dinâmica multi-período do NSFR, assimetria
+EVE vs.\ NIM e tratamento do crédito direcionado --- fornecem motivação
+clara para a tese:
+\textit{Otimização Estocástica Bancária do NIM para Guidance ALM-ALCO
+sob Contornos Regulatórios em Mercados Completos}.
+
+%% =============================================================
+%%  REFERÊNCIAS
+%%  ABNT NBR 6023:2018
+%%  natbib + hyperref: cada \citep{} e \citet{} no texto
+%%  gera um link clicável (cor azul) para a entrada abaixo.
+%%  Não é necessário rodar BibTeX — thebibliography é manual.
+%% =============================================================
+\newpage
+\renewcommand{\bibname}{REFERÊNCIAS}
+
+%% bibitem format for natbib authoryear:
+%%   \bibitem[Label(Ano)]{chave}
+%%   onde Label é o que aparece nas citações: (AUTOR, ANO)
+\begin{thebibliography}{99}
+
+\bibitem[BCBS(2006)]{BCBS2006}
+  BASEL COMMITTEE ON BANKING SUPERVISION.
+  \textbf{International Convergence of Capital Measurement and Capital
+  Standards: A Revised Framework (Basel II)}.
+  Basel: Bank for International Settlements, 2006.
+
+\bibitem[BCBS(2013)]{BCBS238}
+  BASEL COMMITTEE ON BANKING SUPERVISION.
+  \textbf{Basel III: The Liquidity Coverage Ratio and Liquidity Risk
+  Monitoring Tools}. BCBS 238.
+  Basel: Bank for International Settlements, 2013.
+
+\bibitem[BCBS(2014)]{BCBS295}
+  BASEL COMMITTEE ON BANKING SUPERVISION.
+  \textbf{Basel III: The Net Stable Funding Ratio}. BCBS 295.
+  Basel: Bank for International Settlements, 2014.
+
+\bibitem[BCBS(2016)]{BCBS368}
+  BASEL COMMITTEE ON BANKING SUPERVISION.
+  \textbf{Interest Rate Risk in the Banking Book}. BCBS 368.
+  Basel: Bank for International Settlements, 2016.
+
+\bibitem[Ben-Tal e Nemirovski(2002)]{BenTalNemirovski2002}
+  BEN-TAL, A.; NEMIROVSKI, A.
+  Robust optimization: methodology and applications.
+  \textbf{Mathematical Programming}, Heidelberg, v.~92, n.~3,
+  p.~453--480, 2002.
+
+\bibitem[Bertsekas e Shreve(1978)]{BertsekasSheve1978}
+  BERTSEKAS, D.~P.; SHREVE, S.~E.
+  \textbf{Stochastic Optimal Control: The Discrete Time Case}.
+  New York: Academic Press, 1978.
+
+\bibitem[Birge e Louveaux(2011)]{BirgeLouveaux2011}
+  BIRGE, J.~R.; LOUVEAUX, F.
+  \textbf{Introduction to Stochastic Programming}.
+  2.~ed. New York: Springer, 2011.
+
+\bibitem[Bonomo e Martins(2016)]{Bonomo2016}
+  BONOMO, M.; MARTINS, B.
+  The impact of government-driven loans in the monetary transmission
+  mechanism: what can we learn from firm-level data?
+  \textbf{Banco Central do Brasil Working Paper}, Brasília, n.~419, 2016.
+
+\bibitem[Coelho et al.(2012)]{Coelho2012}
+  COELHO, C.~A.; DE MELLO, J.~M.~P.; FUNCHAL, B.
+  The Brazilian payroll lending experiment.
+  \textbf{Review of Economics and Statistics}, Cambridge, v.~94, n.~4,
+  p.~925--934, 2012.
+
+\bibitem[Costa et al.(2005)]{Costa2005}
+  COSTA, O.~L.~V.; FRAGOSO, M.~D.; MARQUES, R.~P.
+  \textbf{Discrete-Time Markov Jump Linear Systems}.
+  London: Springer, 2005.
+
+\bibitem[Drechsler et al.(2017)]{Drechsler2017}
+  DRECHSLER, I.; SAVOV, A.; SCHNABL, P.
+  The deposits channel of monetary policy.
+  \textbf{The Quarterly Journal of Economics}, Oxford, v.~132, n.~4,
+  p.~1819--1876, 2017.
+
+\bibitem[Fabozzi(1996)]{Fabozzi1996}
+  FABOZZI, F.~J.
+  \textbf{Fixed Income Mathematics}.
+  3.~ed. Chicago: Probus Publishing, 1996.
+
+\bibitem[Fabozzi et al.(2007)]{Fabozzi2007}
+  FABOZZI, F.~J.; FOCARDI, S.~M.; KOLM, P.~N.
+  \textbf{Robust Portfolio Optimization and Management}.
+  Hoboken: Wiley, 2007.
+
+\bibitem[Klein(1971)]{Klein1971}
+  KLEIN, M.~A.
+  A theory of the banking firm.
+  \textbf{Journal of Money, Credit and Banking}, Columbus, v.~3, n.~2,
+  p.~205--218, 1971.
+
+\bibitem[Koussis e Padgett(2016)]{KoussisPadgett2016}
+  KOUSSIS, N.; PADGETT, C.
+  Optimal bank capital structure with NSFR constraints.
+  \textbf{Journal of Financial Stability}, Amsterdam, v.~25,
+  p.~123--135, 2016.
+
+\bibitem[Kouwenberg e Zenios(2001)]{KouwenbergZenios2001}
+  KOUWENBERG, R.; ZENIOS, S.~A.
+  Stochastic programming models for asset-liability management.
+  In: ZENIOS, S.~A.; ZIEMBA, W.~T. (ed.).
+  \textbf{Handbook of Asset and Liability Management}.
+  Amsterdam: Elsevier, 2001. v.~1.
+
+\bibitem[Kraft(1988)]{Kraft1988}
+  KRAFT, D.
+  A software package for sequential quadratic programming.
+  \textbf{Technical Report DFVLR-FB 88-28}.
+  Köln: DLR German Aerospace Center, 1988.
+
+\bibitem[Kusy e Ziemba(1986)]{KusyZiemba1986}
+  KUSY, M.~I.; ZIEMBA, W.~T.
+  A bank asset and liability management model.
+  \textbf{Operations Research}, Catonsville, v.~34, n.~3,
+  p.~356--376, 1986.
+
+\bibitem[Merton e Perold(1993)]{MertonPerold1993}
+  MERTON, R.~C.; PEROLD, A.~F.
+  Theory of risk capital in financial firms.
+  \textbf{Journal of Applied Corporate Finance}, Hoboken, v.~6, n.~3,
+  p.~16--32, 1993.
+
+\bibitem[Monti(1972)]{Monti1972}
+  MONTI, M.
+  Deposit, credit and interest rate determination under alternative bank
+  objectives.
+  In: SZEGO, G.~P.; SHELL, K. (ed.).
+  \textbf{Mathematical Methods in Investment and Finance}.
+  Amsterdam: North-Holland, 1972.
+
+\bibitem[Nelson e Siegel(1987)]{NelsonSiegel1987}
+  NELSON, C.~R.; SIEGEL, A.~F.
+  Parsimonious modeling of yield curves.
+  \textbf{The Journal of Business}, Chicago, v.~60, n.~4,
+  p.~473--489, 1987.
+
+\bibitem[Nocedal e Wright(2006)]{Nocedal2006}
+  NOCEDAL, J.; WRIGHT, S.~J.
+  \textbf{Numerical Optimization}.
+  2.~ed. New York: Springer, 2006.
+
+\bibitem[Resti e Sironi(2007)]{ResteSironi2007}
+  RESTI, A.; SIRONI, A.
+  \textbf{Risk Management and Shareholders' Value in Banking}.
+  Chichester: Wiley, 2007.
+
+\bibitem[Saunders e Walter(2011)]{SaundersWalter2011}
+  SAUNDERS, A.; WALTER, I.
+  \textbf{Financial Architecture, Systemic Risk, and Universal Banking}.
+  Cambridge: MIT Press, 2011.
+
+\end{thebibliography}
+
+\end{document}
